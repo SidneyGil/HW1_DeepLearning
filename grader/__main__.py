@@ -1,4 +1,6 @@
 from . import tests  # noqa
+import torch
+import torch.distributions as dist
 
 try:
     # For test grading only, don't worry about it being missing

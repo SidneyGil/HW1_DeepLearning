@@ -11,7 +11,7 @@ class WeatherForecast:
         where the first dimension represents the day,
         and the second dimension represents the measurements.
         """
-        self.data = torch.as_tensor(data_raw).view(-1, 10)
+        self.data = torch.as_tensor(data_raw, dtype=torch.float32).view(-1, 10)
 
     def find_min_and_max_per_day(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -21,7 +21,8 @@ class WeatherForecast:
             min_per_day: tensor of size (num_days,)
             max_per_day: tensor of size (num_days,)
         """
-        raise NotImplementedError
+        return self.data.min(dim=1).values, self.data.max(dim=1).values
+
 
     def find_the_largest_drop(self) -> torch.Tensor:
         """
@@ -31,7 +32,8 @@ class WeatherForecast:
         Returns:
             tensor of a single value, the difference in temperature
         """
-        raise NotImplementedError
+        return torch.diff(self.data.mean(dim=1)).min()
+
 
     def find_the_most_extreme_day(self) -> torch.Tensor:
         """
@@ -40,7 +42,14 @@ class WeatherForecast:
         Returns:
             tensor with size (num_days,)
         """
-        raise NotImplementedError
+        # Utilized Copilot: finds how far each temperature measurements deviates from the daily mean
+        deviations = (self.data - self.data.mean(dim=1, keepdim=True)).abs()
+        # Returns the temperature measurement with the highest deviation per day by utilizing the deviations variable:
+        #   deviations.argmax(dim=1, keepdim=True): Finds the index of the largest deviation in each day's data.
+        #   self.data.gather(dim=1, index=...): Retrieves the corresponding temperature values from `self.data`.
+        #   .squeeze(): Removes extra dimensions to return a 1D tensor of most extreme measurements.
+        return self.data.gather(dim=1, index=deviations.argmax(dim=1, keepdim=True)).squeeze() # 
+
 
     def max_last_k_days(self, k: int) -> torch.Tensor:
         """
@@ -49,7 +58,7 @@ class WeatherForecast:
         Returns:
             tensor of size (k,)
         """
-        raise NotImplementedError
+        return self.data[-k:].max(dim=1).values
 
     def predict_temperature(self, k: int) -> torch.Tensor:
         """
@@ -62,7 +71,8 @@ class WeatherForecast:
         Returns:
             tensor of a single value, the predicted temperature
         """
-        raise NotImplementedError
+        return self.data[-k:].mean(dim=1).mean()
+
 
     def what_day_is_this_from(self, t: torch.FloatTensor) -> torch.LongTensor:
         """
@@ -87,4 +97,4 @@ class WeatherForecast:
         Returns:
             tensor of a single value, the index of the closest data element
         """
-        raise NotImplementedError
+        return (self.data - t).abs().sum(dim=1).argmin() # copilot used to fix error, but idea was there
